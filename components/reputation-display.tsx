@@ -3,7 +3,8 @@
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { TrendingUp, Award, Shield } from "lucide-react"
+import { TrendingUp, Award, Shield, Loader2 } from "lucide-react"
+import { useDevnetReputation } from "@/hooks/use-devnet-reputation"
 import { useReputation } from "@/contexts/reputation-context"
 
 interface ReputationDisplayProps {
@@ -12,8 +13,23 @@ interface ReputationDisplayProps {
 
 export default function ReputationDisplay({ walletAddress }: ReputationDisplayProps) {
   const { score, tiers, getProgressToNextTier, getTierBenefits } = useReputation()
+  const { data: devnetData, loading, error } = useDevnetReputation()
+
   const progressPercent = getProgressToNextTier()
   const nextTierThreshold = score.tier.maxPoints
+
+  if (loading) {
+    return (
+      <Card className="bg-card/50 border-border/50 backdrop-blur p-8">
+        <div className="flex items-center justify-center gap-2 text-muted-foreground">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          Loading reputation data from devnet...
+        </div>
+      </Card>
+    )
+  }
+
+  const displayData = devnetData || { score: 0, tier: "Newcomer", transactionsExecuted: 0, successRate: 0 }
 
   return (
     <div className="space-y-6">
@@ -22,7 +38,7 @@ export default function ReputationDisplay({ walletAddress }: ReputationDisplayPr
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold text-foreground mb-2">Your Reputation</h2>
-              <p className="text-muted-foreground">Build trust through successful transactions</p>
+              <p className="text-muted-foreground">Fetched from Solana Devnet</p>
             </div>
             <Award className="w-8 h-8 text-accent" />
           </div>
@@ -31,24 +47,17 @@ export default function ReputationDisplay({ walletAddress }: ReputationDisplayPr
             <div className="flex items-end justify-between">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Current Score</p>
-                <p className="text-4xl font-bold text-foreground">{score.totalPoints}</p>
+                <p className="text-4xl font-bold text-foreground">{displayData.score}</p>
               </div>
-              <Badge className={`${score.tier.color} bg-opacity-20 border-opacity-50`}>
-                Tier {score.tier.id}: {score.tier.name}
-              </Badge>
+              <Badge className="bg-accent/20 text-accent border-accent/50">{displayData.tier}</Badge>
             </div>
 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">
-                  Progress to {score.tier.id < 4 ? `Tier ${score.tier.id + 1}` : "Max Tier"}
-                </span>
+                <span className="text-muted-foreground">Progress to next tier</span>
                 <span className="text-foreground font-semibold">{Math.round(progressPercent)}%</span>
               </div>
               <Progress value={progressPercent} className="h-2" />
-              <p className="text-xs text-muted-foreground">
-                {score.tier.id < 4 ? `${nextTierThreshold - score.totalPoints} points needed` : "Maximum tier reached"}
-              </p>
             </div>
           </div>
         </div>
@@ -56,9 +65,9 @@ export default function ReputationDisplay({ walletAddress }: ReputationDisplayPr
 
       <div className="grid md:grid-cols-3 gap-4">
         {[
-          { label: "Successful Requests", value: score.successfulRequests.toString(), icon: TrendingUp },
-          { label: "Failed Requests", value: score.failedRequests.toString(), icon: Shield },
-          { label: "Average Rating", value: score.averageRating.toFixed(1) + "/5", icon: Award },
+          { label: "Transactions Executed", value: displayData.transactionsExecuted.toString(), icon: TrendingUp },
+          { label: "Success Rate", value: displayData.successRate.toFixed(1) + "%", icon: Shield },
+          { label: "Last Updated", value: new Date(displayData.lastUpdated).toLocaleDateString(), icon: Award },
         ].map((stat, idx) => {
           const Icon = stat.icon
           return (
@@ -73,39 +82,25 @@ export default function ReputationDisplay({ walletAddress }: ReputationDisplayPr
         })}
       </div>
 
-      <Card className="bg-gradient-to-r from-primary/20 to-accent/20 border-border/50 backdrop-blur p-6">
-        <h3 className="font-semibold text-foreground mb-3">Reputation Tiers</h3>
+      {error && (
+        <Card className="bg-red-500/10 border-red-500/50 p-4">
+          <p className="text-sm text-red-400">{error}</p>
+        </Card>
+      )}
+
+      <Card className="bg-card/50 border-border/50 backdrop-blur p-6">
+        <h3 className="font-semibold text-foreground mb-4">Reputation Tiers</h3>
         <div className="space-y-2 text-sm">
           {tiers.map((tier) => (
             <div key={tier.id} className="flex justify-between">
-              <span className={tier.id === score.tier.id ? `${tier.color} font-semibold` : "text-muted-foreground"}>
-                Tier {tier.id}: {tier.name} {tier.id === score.tier.id && "(Current)"}
+              <span className={tier.name === displayData.tier ? "text-accent font-semibold" : "text-muted-foreground"}>
+                {tier.name} {tier.name === displayData.tier && "(Current)"}
               </span>
               <span className="text-foreground">
-                {tier.minPoints.toLocaleString()} -{" "}
-                {tier.maxPoints === Number.POSITIVE_INFINITY ? "∞" : tier.maxPoints.toLocaleString()} points
+                {tier.minPoints.toLocaleString()} - {tier.maxPoints.toLocaleString()} points
               </span>
             </div>
           ))}
-        </div>
-      </Card>
-
-      <Card className="bg-card/50 border-border/50 backdrop-blur p-6">
-        <h3 className="font-semibold text-foreground mb-4">Your Tier Benefits</h3>
-        <ul className="space-y-2">
-          {getTierBenefits().map((benefit, idx) => (
-            <li key={idx} className="flex items-start gap-3 text-sm text-muted-foreground">
-              <span className="text-accent mt-1">✓</span>
-              <span>{benefit}</span>
-            </li>
-          ))}
-        </ul>
-      </Card>
-
-      <Card className="bg-card/50 border-border/50 backdrop-blur p-6">
-        <h3 className="font-semibold text-foreground mb-4">Recent Activity</h3>
-        <div className="space-y-3">
-          <p className="text-sm text-muted-foreground">Activity tracking coming soon</p>
         </div>
       </Card>
     </div>
