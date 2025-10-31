@@ -10,6 +10,7 @@ import WalletConnect from "@/components/wallet-connect"
 import ReputationDisplay from "@/components/reputation-display"
 import ServiceRequests from "@/components/service-requests"
 import AgentsList from "@/components/agents-list"
+import PaymentSimulator from "@/components/payment-simulator"
 import { useWallet } from "@/contexts/wallet-context"
 
 export default function Dashboard() {
@@ -116,6 +117,13 @@ export default function Dashboard() {
             </div>
           </Card>
         </div>
+
+        {/* Payment Simulator Section */}
+        {isConnected && walletAddress && (
+          <div className="mb-8">
+            <PaymentSimulator />
+          </div>
+        )}
 
         {/* Tabs */}
         <Tabs defaultValue="reputation" className="space-y-6">

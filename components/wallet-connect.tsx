@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Wallet, AlertCircle, Copy, Check } from "lucide-react"
+import { Wallet, AlertCircle, Copy, Check, Network } from "lucide-react"
 import { useWallet } from "@/contexts/wallet-context"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
@@ -11,7 +11,7 @@ interface WalletConnectProps {
 }
 
 export default function WalletConnect({ onConnect }: WalletConnectProps) {
-  const { connect, disconnect, isLoading, error, clearError, isConnected, walletAddress } = useWallet()
+  const { connect, disconnect, isLoading, error, clearError, isConnected, walletAddress, network } = useWallet()
   const [localError, setLocalError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
@@ -44,6 +44,13 @@ export default function WalletConnect({ onConnect }: WalletConnectProps) {
   if (isConnected && walletAddress) {
     return (
       <div className="space-y-4">
+        <div className="flex items-center gap-2 bg-primary/10 border border-primary/50 rounded-lg p-3">
+          <Network className="w-4 h-4 text-primary" />
+          <div>
+            <p className="text-xs text-muted-foreground">Connected Network</p>
+            <p className="text-sm font-medium text-foreground">{network}</p>
+          </div>
+        </div>
         <div className="flex items-center gap-2 bg-accent/10 border border-accent/50 rounded-lg p-3">
           <Wallet className="w-4 h-4 text-accent" />
           <div className="flex-1 min-w-0">

@@ -1,6 +1,9 @@
 "use client"
 
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react"
+import type { Connection } from "@solana/web3.js"
+import { getNetworkLabel } from "@/lib/solana-config"
+import { solanaConnection } from "@/lib/solana-config"
 
 interface WalletContextType {
   isConnected: boolean
@@ -10,6 +13,8 @@ interface WalletContextType {
   connect: () => Promise<void>
   disconnect: () => void
   clearError: () => void
+  network: string
+  connection: Connection
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined)
@@ -129,6 +134,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         connect,
         disconnect,
         clearError,
+        network: getNetworkLabel(),
+        connection: solanaConnection,
       }}
     >
       {children}
